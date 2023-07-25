@@ -7,9 +7,22 @@
 #
 name: OpenWrt-CI
 
+
 on:
-  schedule:
-    - cron: 0 20 * * *
+  repository_dispatch:
+  workflow_dispatch:
+    inputs:
+      ssh:
+        description: 'SSH connection to Actions'
+        required: false
+        default: 'false'
+        type: boolean
+env:
+  REPO_BRANCH: master
+  FEEDS_CONF: feeds.conf.default
+  CONFIG_FILE: config/MIPS/r3g.config
+  DIY_P1_SH: scripts/diy-part1.sh
+  DIY_P2_SH: scripts/diy-part2.sh
 
 permissions:
   contents: read
@@ -49,7 +62,11 @@ jobs:
           ./scripts/feeds install -a
 
       - name: Generate configuration file
-        run: make defconfig
+        run: |
+        [ -e files ] && mv files openwrt/files
+        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
+        cat config/MIPS/MIPS-extra.config >> openwrt/.config
+        make defconfig
 
       - name: Download packages
         run: make download -j16
